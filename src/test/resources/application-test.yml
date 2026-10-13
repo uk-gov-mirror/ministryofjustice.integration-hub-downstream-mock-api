@@ -10,3 +10,5 @@ springdoc:
     enabled: true
   swagger-ui:
     enabled: true
+
+hmpps.test.jwt-helper-enabled: false

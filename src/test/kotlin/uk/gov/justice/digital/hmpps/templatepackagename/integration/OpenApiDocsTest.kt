@@ -78,8 +78,8 @@ class OpenApiDocsTest : IntegrationTestBase() {
   }
 
   @ParameterizedTest
-  @CsvSource(value = ["basicAuth, ORCHESTRATION_CLIENT"])
-  fun `the security scheme is setup for basic auth`(key: String, role: String) {
+  @CsvSource(value = ["bearerAuth, ORCHESTRATION_CLIENT"])
+  fun `the security scheme is setup for bearer auth`(key: String, role: String) {
     webTestClient.get()
       .uri("/v3/api-docs")
       .accept(MediaType.APPLICATION_JSON)
@@ -87,7 +87,7 @@ class OpenApiDocsTest : IntegrationTestBase() {
       .expectStatus().isOk
       .expectBody()
       .jsonPath("$.components.securitySchemes.$key.type").isEqualTo("http")
-      .jsonPath("$.components.securitySchemes.$key.scheme").isEqualTo("basic")
+      .jsonPath("$.components.securitySchemes.$key.scheme").isEqualTo("bearer")
       .jsonPath("$.components.securitySchemes.$key.description").value<String> {
         assertThat(it).contains(role)
       }

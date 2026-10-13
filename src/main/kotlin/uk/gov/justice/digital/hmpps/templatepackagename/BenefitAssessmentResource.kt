@@ -33,7 +33,7 @@ private const val DOWNSTREAM_MOCK_ROLE = "ORCHESTRATION_CLIENT"
 
 @RestController
 @Validated
-@PreAuthorize("hasRole('$DOWNSTREAM_MOCK_ROLE')")
+@PreAuthorize("hasRole('$DOWNSTREAM_MOCK_ROLE') and hasAuthority('SCOPE_benefit-checks.assess')")
 @RequestMapping("/v1/benefit-checks", produces = ["application/json"])
 @Tag(
   name = "Benefit checks",
@@ -48,7 +48,7 @@ class BenefitAssessmentResource(
   @Operation(
     summary = "Assess benefit eligibility",
     description = "Runs a deterministic mock eligibility assessment so the orchestration layer can exercise a realistic downstream journey.",
-    security = [SecurityRequirement(name = "basicAuth")],
+    security = [SecurityRequirement(name = "bearerAuth")],
     responses = [
       ApiResponse(responseCode = "201", description = "Assessment created"),
       ApiResponse(
@@ -56,7 +56,7 @@ class BenefitAssessmentResource(
         description = "Request validation failed",
         content = [Content(schema = Schema(implementation = uk.gov.justice.hmpps.kotlin.common.ErrorResponse::class))],
       ),
-      ApiResponse(responseCode = "401", description = "Missing or invalid Basic authentication credentials"),
+      ApiResponse(responseCode = "401", description = "Missing or invalid OAuth2 access token"),
       ApiResponse(responseCode = "403", description = "Authenticated caller does not have permission to use the API"),
     ],
   )

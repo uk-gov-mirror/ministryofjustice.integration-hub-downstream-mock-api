@@ -34,13 +34,14 @@ class OpenApiConfiguration(buildProperties: BuildProperties) {
     )
     .components(
       io.swagger.v3.oas.models.Components()
-        .addSecuritySchemes("basicAuth", SecurityScheme().addBasicAuthRequirement("ORCHESTRATION_CLIENT")),
+        .addSecuritySchemes("bearerAuth", SecurityScheme().addBearerAuthRequirement("ORCHESTRATION_CLIENT")),
     )
-    .addSecurityItem(SecurityRequirement().addList("basicAuth"))
+    .addSecurityItem(SecurityRequirement().addList("bearerAuth"))
 }
 
-private fun SecurityScheme.addBasicAuthRequirement(role: String): SecurityScheme = type(SecurityScheme.Type.HTTP)
-  .scheme("basic")
+private fun SecurityScheme.addBearerAuthRequirement(role: String): SecurityScheme = type(SecurityScheme.Type.HTTP)
+  .scheme("bearer")
+  .bearerFormat("JWT")
   .`in`(SecurityScheme.In.HEADER)
   .name("Authorization")
-  .description("HTTP Basic credentials for an orchestration client with the `$role` role.")
+  .description("OAuth2 access token with the `$role` role and `benefit-checks.assess` scope.")

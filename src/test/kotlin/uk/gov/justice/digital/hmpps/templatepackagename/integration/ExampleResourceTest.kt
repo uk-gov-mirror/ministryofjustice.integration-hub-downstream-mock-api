@@ -26,10 +26,10 @@ class ExampleResourceTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return unauthorized if credentials are wrong`() {
+    fun `should return unauthorized if token is malformed`() {
       webTestClient.post()
         .uri("/v1/benefit-checks/assessments")
-        .headers(setAuthorisation(password = "wrong-secret"))
+        .headers { it.setBearerAuth("invalid-token") }
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(validRequest())
         .exchange()

@@ -11,21 +11,27 @@ this downstream provider.
 
 - Exposes an independently authenticated downstream endpoint at `POST /v1/benefit-checks/assessments`
 - Uses deterministic business rules so orchestration flows can be tested repeatedly
-- Protects the endpoint with HTTP Basic authentication so it behaves more like an external partner API than an internal HMPPS service
+- Protects the endpoint with OAuth2 JWT access tokens, an orchestration role and an assessment scope
 
 ## Authentication
 
-The API expects HTTP Basic credentials.
+The API accepts an OAuth2 JWT access token issued by the configured authorisation
+server. Basic credentials are no longer accepted. Configure:
 
-Default local credentials:
+| Variable | Purpose |
+| --- | --- |
+| `DOWNSTREAM_MOCK_OAUTH2_ISSUER` | Exact approved token issuer |
+| `DOWNSTREAM_MOCK_JWK_SET_URI` | Approved HTTPS signing-key endpoint |
+| `DOWNSTREAM_MOCK_OAUTH2_AUDIENCE` | Audience dedicated to this provider API |
 
-- Username: `orchestration-client`
-- Password: `orchestration-secret`
+Tokens must have a valid RS256 signature, matching issuer and audience, an expiry
+and subject, `roles: ["ORCHESTRATION_CLIENT"]` and the `benefit-checks.assess` scope.
+Invalid tokens receive 401; valid tokens without the role or scope receive 403.
+The service does not issue tokens. Obtain one using the provider's approved OAuth2
+client registration; do not reuse a consumer token for the downstream boundary.
 
-Override them with:
-
-- `DOWNSTREAM_MOCK_BASIC_AUTH_USERNAME`
-- `DOWNSTREAM_MOCK_BASIC_AUTH_PASSWORD`
+Health endpoints remain public for infrastructure probes. No local production
+credential defaults or signing keys are provided.
 
 ## Running locally
 
@@ -41,7 +47,7 @@ Swagger UI is available locally at:
 
 ```bash
 curl -i \
-  -u orchestration-client:orchestration-secret \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   -H 'Content-Type: application/json' \
   -X POST http://localhost:8080/v1/benefit-checks/assessments \
   -d '{
@@ -78,3 +84,22 @@ The development deployment targets the dedicated Modernisation Platform ECS serv
 Pull requests run the test suite. A push to `main` builds an immutable commit-SHA image, pushes it to ECR, registers a new task-definition revision and waits for the ECS service to become stable.
 
 The temporary `aws-ecs-deployment` branch trigger also publishes an immutable commit-SHA image so the initial Terraform-managed service can be bootstrapped before this workflow reaches `main`.
+
+
+## OAuth2 rollout and verification
+
+The local test suite passed 24 tests, including requests signed with a test RSA key
+served through a local JWKS endpoint. It covers valid access, invalid signatures,
+wrong issuer/audience, expired or missing expiry, future validity, missing role or
+scope, and rejection of the old Basic credentials. The test JWT helper bypass is
+disabled so these requests use the application's actual decoder.
+
+This change is not yet deployed or verified in non-production. Before merging
+(the main workflow deploys automatically), register the approved OAuth2 client,
+configure the three environment variables above and coordinate the platform's
+OAuth2 downstream client deployment. Check health, an authorised assessment and
+401/403 cases in development.
+
+mTLS termination, trust stores, client certificates and DWP/HMRC-wide integration
+coverage are not implemented by this application change. The pilot SOW remains
+open until those controls and the full deployed journey are verified.
